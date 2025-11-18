@@ -9,11 +9,6 @@ const User = db.define(
             autoIncrement: true,
             primaryKey: true,
         },
-        username: {
-            type: DataTypes.STRING(100),
-            allowNull: false,
-            unique: true,
-        },
         email: {
             type: DataTypes.STRING(255),
             allowNull: false,
@@ -22,10 +17,6 @@ const User = db.define(
         password_hash: {
             type: DataTypes.STRING(255),
             allowNull: false,
-        },
-        full_name: {
-            type: DataTypes.STRING(255),
-            allowNull: true,
         },
         preferred_language: {
             type: DataTypes.ENUM('id-ID', 'en-US'),
@@ -42,6 +33,14 @@ const User = db.define(
         },
         last_practice_date: {
             type: DataTypes.DATEONLY,
+            allowNull: true,
+        },
+        profile_picture: {
+            type: DataTypes.STRING(255),
+            defaultValue: 'blank-profile-pic.png',
+        },
+        refresh_token: {
+            type: DataTypes.TEXT,
             allowNull: true,
         },
         created_at: {

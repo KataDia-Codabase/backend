@@ -15,9 +15,10 @@ app.use(express.static('public'));
 app.use(bodyParser());
 
 // ROUTES
-// app.use('/user', require('./src/routes/userRoutes.js'));
-app.use('/lesson', require('./src/routes/lessonRoutes.js'));
-app.use('/lesson-vocab', require('./src/routes/lessonVocabRoutes.js'));
+app.use('/api/auth', require('./src/routes/authRoutes.js'));
+// app.use('/api/user', require('./src/routes/userRoutes.js'));
+app.use('/api/lesson', require('./src/routes/lessonRoutes.js'));
+app.use('/api/lesson-vocab', require('./src/routes/lessonVocabRoutes.js'));
 
 // - **Routes**: `/api/auth`, `/api/user`, `/api/lesson`, `/api/pronunciation`, `/api/audio/upload`, `/api/stt/transcribe`, `/api/tts/speak`, `/api/score`.
 
