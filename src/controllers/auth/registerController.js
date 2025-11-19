@@ -2,8 +2,8 @@ const { User } = require('../../models');
 const bcrypt = require('bcrypt');
 
 const handleRegister = async (req, res) => {
-    const { email, password } = req.body;
-    if (!email || !password) {
+    const {name, email, password } = req.body;
+    if (!name || !email || !password) {
         return res.status(400).json({ message: 'Data tidak lengkap' });
     }
 
@@ -16,6 +16,7 @@ const handleRegister = async (req, res) => {
     try {
         const hashedPwd = await bcrypt.hash(password, 10);
         const newUser = {
+            name,
             email,
             password_hash: hashedPwd,
         };
