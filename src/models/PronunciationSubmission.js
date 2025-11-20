@@ -26,7 +26,7 @@ const PronunciationSubmission = db.define(
             },
         },
         user_audio_url: {
-            type: DataTypes.STRING(1024),
+            type: DataTypes.STRING(255),
             allowNull: false,
         },
         generated_transcript: {

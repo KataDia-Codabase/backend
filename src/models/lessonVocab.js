@@ -18,15 +18,15 @@ const LessonVocab = db.define(
             },
         },
         phrase: {
-            type: DataTypes.STRING(500),
+            type: DataTypes.STRING(255),
             allowNull: false,
         },
         translation: {
-            type: DataTypes.STRING(500),
-            allowNull: true,
+            type: DataTypes.STRING(255),
+            allowNull: false,
         },
         audio_url: {
-            type: DataTypes.STRING(1024),
+            type: DataTypes.STRING(255),
             allowNull: true,
         },
     },

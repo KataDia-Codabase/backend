@@ -31,4 +31,6 @@ module.exports = {
     Lesson,
     LessonVocab,
     User,
+    PronunciationSubmission,
+    UserProgress,
 };
