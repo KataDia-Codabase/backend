@@ -1,27 +1,23 @@
 const { DataTypes } = require('sequelize');
 const db = require('../configs/database.js');
 
-const Lesson = db.define(
-    'lessons',
+const CefrQuestion = db.define(
+    'cefr_questions',
     {
         id: {
             type: DataTypes.INTEGER,
             autoIncrement: true,
             primaryKey: true,
         },
-        title: {
-            type: DataTypes.STRING(255),
+        cefr_test_id: {
+            type: DataTypes.INTEGER,
             allowNull: false,
+            references: {
+                model: 'cefr_tests',
+                key: 'id',
+            },
         },
-        description: {
-            type: DataTypes.TEXT,
-            allowNull: true,
-        },
-        cefr_level: {
-            type: DataTypes.ENUM('A1', 'A2', 'B1', 'B2', 'C1', 'C2'),
-            allowNull: false,
-        },
-        lesson_type: {
+        section_type: {
             type: DataTypes.ENUM(
                 'listening',
                 'reading',
@@ -30,13 +26,19 @@ const Lesson = db.define(
             ),
             allowNull: false,
         },
+        // Teks soal, paragraf bacaan, atau prompt speaking
+        text_content: {
+            type: DataTypes.TEXT,
+            allowNull: true,
+        },
+        // Audio soal listening
+        media_url: {
+            type: DataTypes.STRING(1024),
+            allowNull: true,
+        },
         order_index: {
             type: DataTypes.INTEGER,
             defaultValue: 0,
-        },
-        created_at: {
-            type: DataTypes.DATE,
-            defaultValue: DataTypes.NOW,
         },
     },
     {
@@ -45,4 +47,4 @@ const Lesson = db.define(
     }
 );
 
-module.exports = Lesson;
+module.exports = CefrQuestion;

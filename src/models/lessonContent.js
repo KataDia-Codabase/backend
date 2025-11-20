@@ -1,8 +1,8 @@
-const { Sequelize, DataTypes } = require('sequelize');
+const { DataTypes } = require('sequelize');
 const db = require('../configs/database.js');
 
-const LessonVocab = db.define(
-    'lesson_vocab',
+const LessonContent = db.define(
+    'lesson_contents',
     {
         id: {
             type: DataTypes.INTEGER,
@@ -17,16 +17,14 @@ const LessonVocab = db.define(
                 key: 'id',
             },
         },
-        phrase: {
-            type: DataTypes.STRING(255),
-            allowNull: false,
+        // Diisi jika tipe Reading atau Speaking (Prompt)
+        text_content: {
+            type: DataTypes.TEXT,
+            allowNull: true,
         },
-        translation: {
-            type: DataTypes.STRING(255),
-            allowNull: false,
-        },
-        audio_url: {
-            type: DataTypes.STRING(255),
+        // Diisi jika tipe Listening
+        media_url: {
+            type: DataTypes.STRING(1024),
             allowNull: true,
         },
     },
@@ -36,4 +34,4 @@ const LessonVocab = db.define(
     }
 );
 
-module.exports = LessonVocab;
+module.exports = LessonContent;

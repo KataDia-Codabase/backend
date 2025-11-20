@@ -1,17 +1,41 @@
-const {
-    LessonVocab,
-    Lesson,
-    User,
-    PronunciationSubmission,
-} = require('../models');
+const { LessonVocab, Lesson, PronunciationSubmission } = require('../models');
 const axios = require('axios');
 const FormData = require('form-data');
 const fs = require('fs');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 
-// URL API AI yang baru
+// --- UPDATE DIMULAI DISINI ---
+const ffmpeg = require('fluent-ffmpeg');
+const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
+
+// Memberitahu fluent-ffmpeg lokasi file binary ffmpeg yang benar
+ffmpeg.setFfmpegPath(ffmpegInstaller.path);
+// --- UPDATE BERAKHIR DISINI ---
+
+// URL API AI
 const AI_SERVICE_URL = 'https://katadia.hshinoshowcase.site/api/v1/score';
+
+/**
+ * Helper Function: Convert Audio to WAV
+ * Mengubah file audio apapun menjadi WAV 16kHz Mono (Standar AI)
+ */
+const convertToWav = (inputPath, outputPath) => {
+    return new Promise((resolve, reject) => {
+        ffmpeg(inputPath)
+            .toFormat('wav')
+            .audioFrequency(16000) // Standarisasi ke 16kHz (opsional, tapi disarankan untuk AI)
+            .audioChannels(1) // Standarisasi ke Mono (opsional)
+            .on('error', (err) => {
+                console.error('FFmpeg Error:', err);
+                reject(err);
+            })
+            .on('end', () => {
+                resolve(outputPath);
+            })
+            .save(outputPath);
+    });
+};
 
 /**
  * @desc    Submit audio untuk penilaian pronunciation
@@ -19,28 +43,33 @@ const AI_SERVICE_URL = 'https://katadia.hshinoshowcase.site/api/v1/score';
  * @access  Private
  */
 const submitPronunciation = async (req, res) => {
-    // Ambil data dari body. session_id opsional (bisa null)
     const { user_id, lesson_vocab_id, session_id } = req.body;
 
     // 1. Validasi Request Dasar
     if (!req.file) {
-        return res.status(400).json({
-            message: 'File audio wajib diupload (key: target_audio).',
-        });
+        return res
+            .status(400)
+            .json({
+                message: 'File audio wajib diupload (key: target_audio).',
+            });
     }
     if (!user_id || !lesson_vocab_id) {
-        // Bersihkan file jika validasi gagal
+        // Bersihkan file upload awal jika data tidak lengkap
         if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
         return res
             .status(400)
             .json({ message: 'user_id dan lesson_vocab_id wajib diisi.' });
     }
 
-    // Logika Session ID: Pakai dari frontend, atau generate baru jika tidak ada
     const finalSessionId = session_id || uuidv4();
 
+    // Variable untuk melacak file sementara hasil konversi
+    let fileToSendPath = req.file.path;
+    let isConverted = false;
+    let tempConvertedPath = null;
+
     try {
-        // 2. Ambil Data Lesson Vocab dari Database
+        // 2. Ambil Data Lesson Vocab
         const vocabItem = await LessonVocab.findByPk(lesson_vocab_id, {
             include: [{ model: Lesson, as: 'lesson' }],
         });
@@ -52,43 +81,66 @@ const submitPronunciation = async (req, res) => {
                 .json({ message: 'Lesson Vocab tidak ditemukan.' });
         }
 
-        // Ambil transcript (kata yang harus dibaca) dan bahasa
         const targetTranscript = vocabItem.phrase;
-        const targetLanguage = vocabItem.lesson.language_code; // e.g., 'en-US' atau 'id-ID'
+        const targetLanguage = vocabItem.lesson.language_code;
 
-        // 3. Persiapkan FormData untuk API AI
+        // 3. LOGIKA KONVERSI AUDIO
+        // Cek ekstensi file. Jika bukan .wav, lakukan konversi.
+        const fileExt = path.extname(req.file.originalname).toLowerCase();
+
+        // NOTE: Kita ubah logikanya sedikit agar lebih robust.
+        // Terkadang file .wav dari frontend formatnya tidak standar (misal header rusak atau codec salah).
+        // Jadi lebih aman jika kita paksa convert SEMUA file ke standar 16kHz mono yang disukai AI,
+        // TAPI untuk efisiensi, kita batasi konversi hanya jika bukan .wav atau jika diperlukan.
+        // Untuk saat ini, sesuai request: konversi jika BUKAN .wav.
+
+        if (fileExt !== '.wav') {
+            console.log(
+                `[Convert] File ${fileExt} terdeteksi. Mengonversi ke WAV...`
+            );
+
+            // Buat path sementara: uploads/audio/vocab-audio-xxx.wav
+            // Kita ganti ekstensi file asli dengan .wav untuk nama file output sementara
+            tempConvertedPath = req.file.path + '_temp_converted.wav';
+
+            await convertToWav(req.file.path, tempConvertedPath);
+
+            // Set path pengiriman ke file hasil konversi
+            fileToSendPath = tempConvertedPath;
+            isConverted = true;
+            console.log(`[Convert] Berhasil dikonversi ke: ${fileToSendPath}`);
+        }
+
+        // 4. Persiapkan FormData untuk API AI
         const form = new FormData();
         form.append('user_id', user_id);
-        form.append('language', targetLanguage); // Sesuai request: 'language'
-        form.append('transcript', targetTranscript); // Sesuai request: 'transcript'
-        form.append('session_id', finalSessionId); // Sesuai request: 'session_id'
+        form.append('language', targetLanguage);
+        form.append('transcript', targetTranscript);
+        form.append('session_id', finalSessionId);
 
-        // Masukkan file audio. Key-nya 'audio_file' sesuai instruksi Anda.
-        form.append('audio_file', fs.createReadStream(req.file.path));
+        // Penting: Kirim file dari path yang sudah ditentukan (asli atau hasil convert)
+        form.append('audio_file', fs.createReadStream(fileToSendPath));
 
         console.log(`[AI Hit] Mengirim ke ${AI_SERVICE_URL}...`);
-        // return res.json({ formData: form });
-        // 4. Hit API AI
+
+        // 5. Hit API AI
         const aiResponse = await axios.post(AI_SERVICE_URL, form, {
             headers: {
-                ...form.getHeaders(), // Header multipart/form-data yang benar
+                ...form.getHeaders(),
             },
-            // timeout: 30000, // Timeout diperpanjang ke 30s jaga-jaga AI prosesnya lama
+            timeout: 45000, // Tambah timeout karena ada proses konversi + AI
         });
 
         const aiResult = aiResponse.data;
 
-        // Debug: Cek apa yang dikembalikan AI di console
-        console.log('AI Response:', JSON.stringify(aiResult, null, 2));
-
-        // 5. Mapping Response JSON ke Database Model
-        // Berdasarkan file JSON yang Anda upload
+        // 6. Simpan Hasil ke Database
+        // Catatan: Kita tetap menyimpan referensi ke file ASLI yang diupload user (bukan yang temp wav)
+        // agar format aslinya terjaga di storage kita (misal user upload m4a dari iPhone).
         const submission = await PronunciationSubmission.create({
             user_id: user_id,
             lesson_vocab_id: lesson_vocab_id,
-            user_audio_url: req.file.filename, // Simpan nama file lokal
+            user_audio_url: req.file.filename, // Simpan nama file asli di DB
 
-            // Mapping dari JSON Response AI
             generated_transcript:
                 aiResult.generated_transcript ||
                 aiResult.recognized_transcript ||
@@ -101,14 +153,13 @@ const submitPronunciation = async (req, res) => {
             prosody_score: aiResult.prosody_score,
             stress_score: aiResult.stress_score,
 
-            // Data JSON dan Text
-            phoneme_errors_json: aiResult.phoneme_errors_json, // Sequelize handle JSON otomatis
+            phoneme_errors_json: aiResult.phoneme_errors_json,
             personalized_feedback: aiResult.personalized_feedback,
             cefr_level_assessment:
-                aiResult.cefr_level_assessment || aiResult.cefr_level, // Fallback ke cefr_level
+                aiResult.cefr_level_assessment || aiResult.cefr_level,
         });
 
-        // 6. Kirim Response ke Frontend
+        // 7. Kirim Response ke Frontend
         res.status(201).json({
             message: 'Pronunciation berhasil dinilai',
             data: {
@@ -129,7 +180,6 @@ const submitPronunciation = async (req, res) => {
     } catch (error) {
         console.error('Error pada submitPronunciation:', error.message);
 
-        // Jika error dari response API AI (misal 422 Unprocessable Entity atau 500)
         if (error.response) {
             console.error('AI Error Data:', error.response.data);
             return res.status(error.response.status).json({
@@ -142,9 +192,26 @@ const submitPronunciation = async (req, res) => {
             message: 'Terjadi kesalahan internal server',
             error: error.message,
         });
+    } finally {
+        // 8. CLEANUP (PENTING!)
+        // Hapus file WAV sementara hasil konversi agar server tidak penuh
+        if (
+            isConverted &&
+            tempConvertedPath &&
+            fs.existsSync(tempConvertedPath)
+        ) {
+            try {
+                fs.unlinkSync(tempConvertedPath);
+                console.log('[Cleanup] File sementara WAV dihapus.');
+            } catch (err) {
+                console.error(
+                    '[Cleanup Error] Gagal menghapus file temp:',
+                    err
+                );
+            }
+        }
+        // File asli (req.file.path) TIDAK dihapus karena disimpan untuk history user
     }
-    // Catatan: Kita TIDAK menghapus file audio lokal di blok finally/success
-    // karena file tersebut dibutuhkan untuk diputar ulang oleh user (endpoint GET audio).
 };
 
 /**
@@ -160,8 +227,7 @@ const getSubmissionHistory = async (req, res) => {
             include: [
                 {
                     model: LessonVocab,
-                    as: 'lesson_vocab',
-                    attributes: ['phrase', 'translation', 'target_audio_url'], // Include target audio juga
+                    attributes: ['phrase', 'translation', 'target_audio_url'],
                 },
             ],
             order: [['created_at', 'DESC']],

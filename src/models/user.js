@@ -1,4 +1,4 @@
-const { Sequelize, DataTypes } = require('sequelize');
+const { DataTypes } = require('sequelize');
 const db = require('../configs/database.js');
 
 const User = db.define(
@@ -22,22 +22,13 @@ const User = db.define(
             type: DataTypes.STRING(255),
             allowNull: false,
         },
-        preferred_language: {
-            type: DataTypes.ENUM('id-ID', 'en-US'),
-            allowNull: false,
-            defaultValue: 'id-ID',
+        current_cefr_level: {
+            type: DataTypes.ENUM('A1', 'A2', 'B1', 'B2', 'C1', 'C2'),
+            defaultValue: 'A1',
         },
         xp_points: {
             type: DataTypes.INTEGER,
             defaultValue: 0,
-        },
-        current_streak: {
-            type: DataTypes.INTEGER,
-            defaultValue: 0,
-        },
-        last_practice_date: {
-            type: DataTypes.DATEONLY,
-            allowNull: true,
         },
         profile_picture: {
             type: DataTypes.STRING(255),

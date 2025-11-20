@@ -1,8 +1,8 @@
 const { DataTypes } = require('sequelize');
 const db = require('../configs/database.js');
 
-const Lesson = db.define(
-    'lessons',
+const CefrTest = db.define(
+    'cefr_tests',
     {
         id: {
             type: DataTypes.INTEGER,
@@ -11,28 +11,15 @@ const Lesson = db.define(
         },
         title: {
             type: DataTypes.STRING(255),
-            allowNull: false,
-        },
-        description: {
-            type: DataTypes.TEXT,
             allowNull: true,
         },
-        cefr_level: {
+        target_level: {
             type: DataTypes.ENUM('A1', 'A2', 'B1', 'B2', 'C1', 'C2'),
             allowNull: false,
         },
-        lesson_type: {
-            type: DataTypes.ENUM(
-                'listening',
-                'reading',
-                'vocabulary',
-                'speaking'
-            ),
-            allowNull: false,
-        },
-        order_index: {
-            type: DataTypes.INTEGER,
-            defaultValue: 0,
+        passing_score: {
+            type: DataTypes.DECIMAL(5, 2),
+            defaultValue: 70.0,
         },
         created_at: {
             type: DataTypes.DATE,
@@ -45,4 +32,4 @@ const Lesson = db.define(
     }
 );
 
-module.exports = Lesson;
+module.exports = CefrTest;
