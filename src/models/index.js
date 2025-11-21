@@ -12,8 +12,8 @@ const Lesson = require('./Lesson');
 const LessonContent = require('./lessonContent');
 const LessonQuestion = require('./lessonQuestion');
 const LessonOption = require('./lessonOption');
-const LessonSpeakingAttempt = require('./LessonSpeakingAttempt');
-const UserLessonProgress = require('./UserLessonProgress');
+const LessonSpeakingAttempt = require('./lessonSpeakingAttempt.js');
+const UserLessonProgress = require('./userLessonProgress.js');
 
 // CEFR Assessment
 const CefrTest = require('./cefrTest');

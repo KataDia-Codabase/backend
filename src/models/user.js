@@ -40,7 +40,7 @@ const User = db.define(
         },
         created_at: {
             type: DataTypes.DATE,
-            defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
+            defaultValue: DataTypes.NOW,
         },
     },
     {

@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 
-// Impor fungsi controller
 const {
     createLesson,
     getAllLessons,
@@ -10,49 +9,40 @@ const {
     deleteLesson,
 } = require('../controllers/lessonController');
 
-// Catatan:
-// Rute-rute ini secara otomatis memiliki prefix '/lesson'
-// karena cara Anda mengaturnya di index.js (app.use('/lesson', ...))
+// ==============================================================================
+// LESSON ROUTES (Standard Learning)
+// Base Prefix: /lesson (diatur di index.js)
+// ==============================================================================
 
 /**
  * @route   GET /lesson/
- * @desc    Mendapatkan semua lessons (dengan filter)
+ * @desc    Ambil semua list lesson (bisa filter ?cefr_level=B1&lesson_type=listening)
  */
 router.get('/', getAllLessons);
 
 /**
  * @route   POST /lesson/
- * @desc    Membuat lesson baru
+ * @desc    Buat header lesson baru (Judul, Tipe, Level)
  */
 router.post('/', createLesson);
 
 /**
  * @route   GET /lesson/:id
- * @desc    Mendapatkan detail satu lesson (termasuk vocab)
+ * @desc    Ambil SATU lesson LENGKAP dengan Content -> Questions -> Options
+ * @note    Endpoint ini dipanggil saat user mulai mengerjakan lesson.
  */
 router.get('/:id', getLessonById);
 
 /**
  * @route   PUT /lesson/:id
- * @desc    Memperbarui lesson
+ * @desc    Edit info dasar lesson
  */
 router.put('/:id', updateLesson);
 
 /**
  * @route   DELETE /lesson/:id
- * @desc    Menghapus lesson
+ * @desc    Hapus lesson (Hati-hati, menghapus semua soal di dalamnya!)
  */
 router.delete('/:id', deleteLesson);
-
-// Anda juga bisa menggabungkannya seperti ini:
-//
-// router.route('/')
-//   .get(getAllLessons)
-//   .post(createLesson);
-//
-// router.route('/:id')
-//   .get(getLessonById)
-//   .put(updateLesson)
-//   .delete(deleteLesson);
 
 module.exports = router;
