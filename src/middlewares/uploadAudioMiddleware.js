@@ -52,6 +52,6 @@ const uploadAudio = multer({
 });
 
 // 6. Ekspor sebagai middleware untuk satu file
-// 'audio_url' adalah nama field 'name' di form <input type="file" name="audio_url">
+// 'media_url' adalah nama field 'name' di form <input type="file" name="media_url">
 // Frontend harus mengirim file dengan key ini.
-module.exports = uploadAudio.single('audio_url');
+module.exports = uploadAudio.single('media_url');

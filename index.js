@@ -19,9 +19,11 @@ app.use('/api/auth', require('./src/routes/authRoutes.js'));
 // app.use('/api/user', require('./src/routes/userRoutes.js'));
 app.use('/api/lesson', require('./src/routes/lessonRoutes.js'));
 app.use('/api/lesson-vocab', require('./src/routes/lessonVocabRoutes.js'));
+app.use('/api/contents', require('./src/routes/lessonContentRoutes.js'));
+app.use('/api/questions', require('./src/routes/lessonQuestionRoutes.js'));
+app.use('/api/speaking', require('./src/routes/lessonSpeakingRoutes.js'));
+app.use('/api/progress', require('./src/routes/userProgressRoutes.js'));
 app.use('/api/pronunciation', require('./src/routes/pronunciationRoutes.js'));
-
-// - **Routes**: `/api/auth`, `/api/user`, `/api/lesson`, `/api/pronunciation`, `/api/audio/upload`, `/api/stt/transcribe`, `/api/tts/speak`, `/api/score`.
 
 // Global error handling
 app.use((err, _req, res, next) => {

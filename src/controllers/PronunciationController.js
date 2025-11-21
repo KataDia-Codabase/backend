@@ -47,11 +47,9 @@ const submitPronunciation = async (req, res) => {
 
     // 1. Validasi Request Dasar
     if (!req.file) {
-        return res
-            .status(400)
-            .json({
-                message: 'File audio wajib diupload (key: target_audio).',
-            });
+        return res.status(400).json({
+            message: 'File audio wajib diupload (key: target_audio).',
+        });
     }
     if (!user_id || !lesson_vocab_id) {
         // Bersihkan file upload awal jika data tidak lengkap
@@ -82,7 +80,7 @@ const submitPronunciation = async (req, res) => {
         }
 
         const targetTranscript = vocabItem.phrase;
-        const targetLanguage = vocabItem.lesson.language_code;
+        const targetLanguage = 'en-US'; // Atau ambil dari vocabItem.lesson.language_code jika tersedia
 
         // 3. LOGIKA KONVERSI AUDIO
         // Cek ekstensi file. Jika bukan .wav, lakukan konversi.
@@ -120,7 +118,6 @@ const submitPronunciation = async (req, res) => {
 
         // Penting: Kirim file dari path yang sudah ditentukan (asli atau hasil convert)
         form.append('audio_file', fs.createReadStream(fileToSendPath));
-
         console.log(`[AI Hit] Mengirim ke ${AI_SERVICE_URL}...`);
 
         // 5. Hit API AI
