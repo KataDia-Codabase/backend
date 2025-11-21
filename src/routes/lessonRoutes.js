@@ -7,6 +7,7 @@ const {
     getLessonById,
     updateLesson,
     deleteLesson,
+    getLessonsForSync,
 } = require('../controllers/lessonController');
 
 // ==============================================================================
@@ -19,6 +20,12 @@ const {
  * @desc    Ambil semua list lesson (bisa filter ?cefr_level=B1&lesson_type=listening)
  */
 router.get('/', getAllLessons);
+
+/**
+ * @route   GET /lesson/
+ * @desc    Ambil semua list lesson (bisa filter ?cefr_level=B1&lesson_type=listening)
+ */
+router.get('/sync', getLessonsForSync);
 
 /**
  * @route   POST /lesson/

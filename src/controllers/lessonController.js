@@ -230,10 +230,153 @@ const deleteLesson = async (req, res) => {
     }
 };
 
+/**
+ * @desc    Endpoint Khusus Sync ke SQLite Frontend
+ * @route   GET /api/lessons/sync
+ */
+const getLessonsForSync = async (req, res) => {
+    try {
+        // Ambil data mentah dari MySQL
+        const lessons = await Lesson.findAll({
+            include: [
+                {
+                    model: LessonContent,
+                    as: 'contents',
+                    include: [
+                        {
+                            model: LessonQuestion,
+                            as: 'questions',
+                            include: [{ model: LessonOption, as: 'options' }],
+                        },
+                    ],
+                },
+            ],
+        });
+
+        // --- PROSES PENJEMBATANAN DATA ---
+        const formattedData = lessons.map((lesson) => {
+            // Container untuk tabel-tabel pecahan SQLite
+            const readingPassages = [];
+            const listeningSegments = [];
+            const speakingTasks = [];
+
+            // Container untuk Quiz (karena di SQLite nempel ke Lesson, bukan Content)
+            const quizQuestions = [];
+            const quizOptions = [];
+
+            // 1. JEMBATAN KONTEN (Pecah lesson_contents MySQL ke tabel spesifik SQLite)
+            const processedContents = lesson.contents.map((content) => {
+                // Konversi ID ke String
+                const contentIdStr = content.id.toString();
+                const lessonIdStr = lesson.id.toString();
+
+                // Logika Pemisahan Data
+                if (lesson.lesson_type === 'reading' && content.text_content) {
+                    readingPassages.push({
+                        id: `rp_${content.id}`, // ID Unik dummy untuk SQLite
+                        lesson_contents_id: contentIdStr,
+                        title: lesson.title,
+                        passage_text: content.text_content, // Mapping Teks
+                    });
+                } else if (
+                    lesson.lesson_type === 'listening' &&
+                    content.media_url
+                ) {
+                    listeningSegments.push({
+                        id: `ls_${content.id}`,
+                        lesson_contents_id: contentIdStr,
+                        audio_url: content.media_url, // Mapping Audio
+                        order_index: 0,
+                    });
+                } else if (lesson.lesson_type === 'speaking') {
+                    speakingTasks.push({
+                        id: `st_${content.id}`,
+                        lesson_contents_id: contentIdStr,
+                        prompt_text: content.text_content, // Mapping Prompt
+                        audio_url: content.media_url,
+                    });
+                }
+
+                // 2. JEMBATAN SOAL (Flattening Hierarchy)
+                // Ambil soal dari dalam content ini, pindahkan ke array quizQuestions lesson
+                if (content.questions) {
+                    content.questions.forEach((q) => {
+                        const qIdStr = q.id.toString();
+
+                        quizQuestions.push({
+                            id: qIdStr,
+                            lesson_id: lessonIdStr, // Link langsung ke Lesson ID
+                            question_text: q.question_text,
+                            question_type: lesson.lesson_type,
+                            order_index: 0,
+                        });
+
+                        // 3. JEMBATAN OPSI & BOOLEAN
+                        if (q.options) {
+                            q.options.forEach((opt) => {
+                                quizOptions.push({
+                                    id: opt.id.toString(),
+                                    question_id: qIdStr,
+                                    option_text: opt.option_text,
+                                    is_correct: opt.is_correct ? 1 : 0, // True/False -> 1/0
+                                    order_index: 0,
+                                });
+                            });
+                        }
+                    });
+                }
+
+                // Kembalikan struktur tabel lesson_contents dasar untuk SQLite
+                return {
+                    id: contentIdStr,
+                    lesson_id: lessonIdStr,
+                    description: '',
+                    order_index: 0,
+                    created_at: new Date().toISOString(),
+                };
+            });
+
+            // Susun Final Object sesuai kebutuhan Logic Sync Frontend
+            return {
+                lesson_data: {
+                    // Tabel 'lessons'
+                    id: lesson.id.toString(),
+                    title: lesson.title,
+                    type: lesson.lesson_type,
+                    cefr_level: lesson.cefr_level,
+                    description: lesson.description,
+                    created_at: lesson.created_at,
+                },
+                contents: processedContents, // Tabel 'lesson_contents'
+                details: {
+                    // Tabel-tabel spesifik
+                    reading_passages: readingPassages,
+                    listening_segments: listeningSegments,
+                    speaking_tasks: speakingTasks,
+                },
+                quizzes: {
+                    // Tabel 'quiz_questions' & 'quiz_options'
+                    questions: quizQuestions,
+                    options: quizOptions,
+                },
+            };
+        });
+
+        res.status(200).json({
+            message: 'Data sync berhasil diambil',
+            data: formattedData,
+        });
+    } catch (error) {
+        console.error('Sync Error:', error);
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
 module.exports = {
     createLesson,
     getAllLessons,
     getLessonById,
     updateLesson,
     deleteLesson,
+    getLessonsForSync,
 };
