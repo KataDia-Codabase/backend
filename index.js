@@ -24,6 +24,9 @@ app.use('/api/questions', require('./src/routes/lessonQuestionRoutes.js'));
 app.use('/api/speaking', require('./src/routes/lessonSpeakingRoutes.js'));
 app.use('/api/progress', require('./src/routes/userProgressRoutes.js'));
 app.use('/api/pronunciation', require('./src/routes/pronunciationRoutes.js'));
+app.use('/api/cefr/questions', require('./src/routes/cefrQuestionRoutes.js'));
+app.use('/api/cefr/tests', require('./src/routes/cefrTestRoutes.js'));
+app.use('/api/cefr', require('./src/routes/cefrRoutes.js'));
 
 // Global error handling
 app.use((err, _req, res, next) => {
